@@ -1,0 +1,67 @@
+from pyspark import SparkContext
+from pyspark.sql import SparkSession, SQLContext, functions as f
+from pyspark.sql.functions import col, avg, count, asc
+from pyspark.sql.types import StructType, IntegerType, StringType, BooleanType, FloatType, DataType
+
+spark = SparkSession \
+    .builder \
+    .appName("Activity grupal UB") \
+    .getOrCreate()
+
+# PATH FILES
+BASE_PATH_FILE = "/home/jorge/PycharmProjects/pythonProject3/"
+
+# IMPORT STOCK .CSV
+schemaStock = StructType() \
+    .add("product_id", IntegerType(), True) \ 
+    .add("quantity", IntegerType(), True)
+
+dataframeStock = spark.read.option("header", True) \
+    .format("csv") \
+    .schema(schemaStock) \
+    .load(BASE_PATH_FILE + "stock.csv")
+
+# IMPORT PURCHASES .JSON
+dataframePurchases = spark.read.json(BASE_PATH_FILE + "purchases.json")
+#dataframePurchases.show()
+
+# Ejercicio 1: Los 10 productos más comprados.
+dataframePurchases.groupby("product_id").count().sort("count", ascending=False).show(10)
+
+# Ejercicio 2: Porcentaje de compra de cada tipo de producto.
+numberRows = dataframePurchases.count()
+def calculatePercentage (value):
+    return (value/numberRows)*100
+
+dataframePurchases.groupby("item_type").count().withColumn("percentage", calculatePercentage(col("count"))).show()
+
+# Ejercicio 3: Obtener los 3 productos más comprados por cada tipo de producto
+dataframePurchases.groupby('item_type').count().sort('count', ascending=False).show(3)
+
+
+# Ejercicio 4: Obtener los productos que son más caros que la media del precio de los productos
+priceMean = dataframePurchases.agg({'price': 'mean'})
+dataframePurchases.filter(10 > dataframePurchases.price).groupby("product_id").agg(avg("price")).show() # por revisar 
+
+# Ejercicio 5:  Indicar la tienda que ha vendido más productos.
+#dataframePurchases.groupby('shop_id').count().sort("count", ascending=False).show()
+
+# Ejercicio 6: Indicar la tienda que ha facturado más dinero.
+
+
+""" Ejercicio 7 
+Dividir el mundo en 5 áreas geográficas iguales según la longitud (location.lon) y agregar una columna con el nombre del área geográfica, por ejemplo, “área1”, “área2”, …
+    ¿En qué área se utiliza más PayPal?
+    ¿Cuáles son los 3 productos más comprados en cada área?
+    ¿Qué área ha facturado menos dinero?
+"""
+
+# Ejercicio 8: Indicar los productos que no tienen stock suficiente para las compras realizadas.
+
+
+
+
+
+
+
+
